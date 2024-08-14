@@ -86,16 +86,17 @@ class Auth extends CI_Controller
 
     public function registration()
     {
-        if ($this->session->userdata('email')){
+        if ($this->session->userdata('email')) {
             redirect('user');
         }
+
         $this->form_validation->set_rules('name', 'Name', 'required|trim');
         $this->form_validation->set_rules('email', 'Email', 'required|trim|valid_email|is_unique[user.email]', [
-            'is_unique' => 'this email has already register'
+            'is_unique' => 'This email has already registered!'
         ]);
-        $this->form_validation->set_rules('password1', 'Password', 'required|trim|min_length[2]|matches[password2]', [
-            'matches' => 'password dont match!',
-            'min_length' => 'password too short!'
+        $this->form_validation->set_rules('password1', 'Password', 'required|trim|min_length[3]|matches[password2]', [
+            'matches' => 'Password dont match!',
+            'min_length' => 'Password too short!'
         ]);
         $this->form_validation->set_rules('password2', 'Password', 'required|trim|matches[password1]');
 
@@ -116,54 +117,49 @@ class Auth extends CI_Controller
                 'date_created' => time()
             ];
 
-
-            //siapakan token
+            // siapkan token
             $token = base64_encode(random_bytes(32));
             $user_token = [
-                'email'=> $email,
-                'token'=> $token,
-                'date+created'=> time()
-                
+                'email' => $email,
+                'token' => $token,
+                'date_created' => time()
             ];
-
 
             $this->db->insert('user', $data);
             $this->db->insert('user_token', $user_token);
 
             $this->_sendEmail($token, 'verify');
 
-            $this->session->set_flashdata('message', '<div class="alert
-            alert-success" role="alert">Congratulation! your account has been created. Please Login</div>');
+            $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Congratulation!
+             your account has been created. Please activate your account</div>');
             redirect('auth');
         }
     }
 
-    private function _sendEmail ($token, $type)
+    private function _sendEmail($token, $type)
     {
         $config = [
-            'protocol' => 'smtp',
-            'smtp_host' => 'ssl:/smtp.googleemail.com',
+            'protocol'  => 'smtp',
+            'smtp_host' => 'ssl://smtp.googlemail.com',
             'smtp_user' => 'gulaarenn072@gmail.com',
-            'smtp_pass' => 'tmtj lcux seiu lptx',
+            'smtp_pass' => 'tmtj lcux seiu lptx0',
             'smtp_port' => 465,
-            'mailtype' => 'html',
-            'charset' => 'utf-8',
-            'newline' => "\r\n"
-
+            'mailtype'  => 'html',
+            'charset'   => 'utf-8',
+            'newline'   => "\r\n"
         ];
-        $this->email->initialize($config);
 
-        $this->email->from('wpunpas@gmail.com', 'Web Programming UNPAS');
+        $this->load->library('email',$config);  
+
+        $this->email->from('gulaarenn072@gmail.com', 'Web Programming UNPAS');
         $this->email->to($this->input->post('email'));
 
         if ($type == 'verify') {
             $this->email->subject('Account Verification');
-            $this->email->message('Click this link to verify you account : <a href="' . base_url() 
-            . 'auth/verify?email=' . $this->input->post('email') . '&token=' . urlencode($token) . '">Activate</a>');
+            $this->email->message('Click this link to verify you account : <a href="' . base_url() . 'auth/verify?email=' . $this->input->post('email') . '&token=' . urlencode($token) . '">Activate</a>');
         } else if ($type == 'forgot') {
             $this->email->subject('Reset Password');
-            $this->email->message('Click this link to reset your password : <a href="' . base_url() 
-            . 'auth/resetpassword?email=' . $this->input->post('email') . '&token=' . urlencode($token) . '">Reset Password</a>');
+            $this->email->message('Click this link to reset your password : <a href="' . base_url() . 'auth/resetpassword?email=' . $this->input->post('email') . '&token=' . urlencode($token) . '">Reset Password</a>');
         }
 
         if ($this->email->send()) {
